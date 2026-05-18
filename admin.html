@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>Admin Panel Ujian</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; background: #f5f5f5; }
+   .container { max-width: 1000px; margin: auto; }
+   .card { background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+    input, select, button { padding: 10px; margin: 5px; border-radius: 5px; border: 1px solid #ddd; }
+    button { background: #1a73e8; color: white; border: none; cursor: pointer; }
+    button:hover { opacity: 0.9; }
+    button.danger { background: #ea4335; }
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+    th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+    th { background: #f0f0f0; }
+   .hidden { display: none; }
+  </style>
+</head>
+<body>
+<div class="container">
+  <div id="loginCard" class="card">
+    <h2>🔒 Login Admin</h2>
+    <input type="password" id="adminPass" placeholder="Masukkan password admin">
+    <button onclick="login()">Masuk</button>
+  </div>
+
+  <div id="panel" class="hidden">
+    <div class="card">
+      <h3>📚 Kelola Mapel & Link Form</h3>
+      <input type="text" id="subjectId" placeholder="ID Mapel: mtk, ipa">
+      <input type="text" id="subjectName" placeholder="Nama Mapel: Matematika">
+      <input type="text" id="formUrl" placeholder="Link Google Form" style="width: 400px;">
+      <button onclick="saveSubject()">Simpan Mapel</button>
+      <div id="subjectList"></div>
+    </div>
+
+    <div class="card">
+      <h3>👨‍🎓 Monitoring Siswa</h3>
+      <button onclick="loadStudents()">Refresh Data</button>
+      <div id="studentList"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const API_URL = 'https://backend-ujian-online.onrender.com';
+let adminPass = '';
+
+function login() {
+  adminPass = document.getElementById('adminPass').value;
+  if (!adminPass) return alert('Masukkan password!');
+
+  document.getElementById('loginCard').classList.add('hidden');
+  document.getElementById('panel').classList.remove('hidden');
+  loadSubjects();
+  loadStudents();
+}
+
+async function api(path, method='GET', body=null) {
+  const opts = {
+    method,
+    headers: {
+      'Content-Type': 'application/json',
+      'x-admin-password': adminPass
+    }
+  };
+  if (body) opts.body = JSON.stringify(body);
+  const res = await fetch(API_URL + path, opts);
+  return res.json();
+}
+
+async function loadSubjects() {
+  const data = await api('/admin/subjects');
+  let html = '<table><tr><th>ID</th><th>Nama</th><th>Link Form</th></tr>';
+  for (let id in data) {
+    html += `<tr>
+      <td>${id}</td>
+      <td>${data[id].name}</td>
+      <td>${data[id].formUrl || '-'}</td>
+    </tr>`;
+  }
+  html += '</table>';
+  document.getElementById('subjectList').innerHTML = html;
+}
+
+async function saveSubject() {
+  const id = document.getElementById('subjectId').value;
+  const name = document.getElementById('subjectName').value;
+  const formUrl = document.getElementById('formUrl').value;
+
+  await api('/admin/subjects', 'POST', { id, name, formUrl });
+  alert('Mapel tersimpan!');
+  loadSubjects();
+}
+
+async function loadStudents() {
+  const data = await api('/admin/students');
+  if (!data.length) {
+    document.getElementById('studentList').innerHTML = '<p>Belum ada siswa login</p>';
+    return;
+  }
+
+  let html = '<table><tr><th>Nama</th><th>Email</th><th>Mapel</th><th>Pelanggaran</th><th>Status</th><th>Aksi</th></tr>';
+  data.forEach(s => {
+    html += `<tr>
+      <td>${s.name}</td>
+      <td>${s.email}</td>
+      <td>${s.subject}</td>
+      <td>${s.switchCount}</td>
+      <td>${s.blocked? '🚫 Blokir' : '✅ Aktif'}</td>
+      <td><button class="danger" onclick="deleteStudent('${s.email}')">Hapus</button></td>
+    </tr>`;
+  });
+  html += '</table>';
+  document.getElementById('studentList').innerHTML = html;
+}
+
+async function deleteStudent(email) {
+  if (confirm('Hapus data siswa ini?')) {
+    await fetch(`${API_URL}/admin/student/${email}`, {
+      method: 'DELETE',
+      headers: { 'x-admin-password': adminPass }
+    });
+    loadStudents();
+  }
+}
+</script>
+</body>
+</html>
