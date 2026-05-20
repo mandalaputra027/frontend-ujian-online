@@ -75,14 +75,46 @@ async function loadSubjects() {
 document.getElementById('loginForm').addEventListener('submit', async function(e) {
   e.preventDefault();
 
+  document.getElementById('loginForm').addEventListener('submit', async function(e) {
+  e.preventDefault();
+
   const name = document.getElementById('studentName').value.trim();
   const email = document.getElementById('studentEmail').value.trim();
   const subject = document.getElementById('subject').value;
 
   if (!subject) return alert('Pilih mapel dulu!');
 
+  // Validasi domain
+  if (!email.endsWith('@smpkanisiuskudus.sch.id')) {
+    return alert('Gunakan email sekolah: @smpkanisiuskudus.sch.id');
+  }
+
   document.getElementById('startBtn').disabled = true;
   document.getElementById('startBtn').textContent = 'Memulai...';
+
+  try {
+    const response = await fetch(`${CONFIG.BACKEND_URL}/api/init`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, email, subject })
+    });
+
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.error);
+    if (result.blocked) return showBlocked();
+
+    studentData = { name, email, subject };
+    warningCount = result.totalPoint;
+    startExam(result.formUrl);
+
+  } catch (error) {
+    alert(error.message || 'Gagal terhubung ke server');
+    document.getElementById('startBtn').disabled = false;
+    document.getElementById('startBtn').textContent = 'Mulai Ujian';
+  }
+});
+
+  
 
   try {
     const response = await fetch(`${CONFIG.BACKEND_URL}/api/init`, {
