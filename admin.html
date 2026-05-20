@@ -33,6 +33,15 @@
       <input type="text" id="formUrl" placeholder="Link Google Form" style="width: 400px;">
       <button onclick="saveSubject()">Simpan Mapel</button>
       <div id="subjectList"></div>
+      <div class="card">
+      <h3>⚠️ Kelola Jenis Pelanggaran</h3>
+      <input type="text" id="violationId" placeholder="ID: TAB_SWITCH">
+      <input type="text" id="violationName" placeholder="Nama: Pindah Tab">
+      <input type="number" id="violationPoint" placeholder="Poin: 1" style="width:100px;">
+      <input type="number" id="violationAutoBlock" placeholder="Auto blokir setelah: 5" style="width:180px;">
+      <button onclick="saveViolation()">Simpan Pelanggaran</button>
+      <div id="violationList"></div>
+</div>
     </div>
 
     <div class="card">
@@ -146,6 +155,101 @@ async function deleteStudent(email) {
   if (confirm('Hapus data siswa ini?')) {
     await api(`/admin/student/${email}`, 'DELETE');
     loadStudents();
+  }
+}
+  async function loadViolations() {
+  try {
+    const data = await api('/admin/violations');
+    let html = '<table><tr><th>ID</th><th>Nama</th><th>Poin</th><th>Auto Blokir</th><th>Aksi</th></tr>';
+    for (let id in data) {
+      html += `<tr>
+        <td>${id}</td>
+        <td>${data[id].name}</td>
+        <td>${data[id].point}</td>
+        <td>${data[id].autoBlock}x</td>
+        <td>
+          <button onclick="editViolation('${id}', '${data[id].name}', ${data[id].point}, ${data[id].autoBlock})">Edit</button>
+          <button class="danger" onclick="deleteViolation('${id}')">Hapus</button>
+        </td>
+      </tr>`;
+    }
+    html += '</table>';
+    document.getElementById('violationList').innerHTML = html;
+  } catch (e) {
+    document.getElementById('violationList').innerHTML = '<p style="color:red">Gagal load</p>';
+  }
+}
+
+function editViolation(id, name, point, autoBlock) {
+  document.getElementById('violationId').value = id;
+  document.getElementById('violationName').value = name;
+  document.getElementById('violationPoint').value = point;
+  document.getElementById('violationAutoBlock').value = autoBlock;
+}
+
+async function saveViolation() {
+  const id = document.getElementById('violationId').value.trim();
+  const name = document.getElementById('violationName').value.trim();
+  const point = document.getElementById('violationPoint').value;
+  const autoBlock = document.getElementById('violationAutoBlock').value;
+
+  if (!id ||!name) return alert('ID dan Nama wajib!');
+  try {
+    await api('/admin/violations', 'POST', { id, name, point, autoBlock });
+    alert('Tersimpan!');
+    document.getElementById('violationId').value = '';
+    document.getElementById('violationName').value = '';
+    document.getElementById('violationPoint').value = '';
+    document.getElementById('violationAutoBlock').value = '';
+    loadViolations();
+  } catch (e) {
+    alert('Gagal simpan');
+  }
+}
+
+async function deleteViolation(id) {
+  if (confirm('Hapus jenis pelanggaran ini?')) {
+    await api(`/admin/violation/${id}`, 'DELETE');
+    loadViolations();
+  }
+}
+
+// Update fungsi login biar loadViolations ikut kepanggil
+function login() {
+  adminPass = document.getElementById('adminPass').value;
+  if (!adminPass) return alert('Masukkan password!');
+  document.getElementById('loginCard').classList.add('hidden');
+  document.getElementById('panel').classList.remove('hidden');
+  loadSubjects();
+  loadStudents();
+  loadViolations(); // TAMBAH INI
+}
+
+// Update loadStudents biar nampilin totalPoint + detail log
+async function loadStudents() {
+  try {
+    const data = await api('/admin/students');
+    if (!data.length) {
+      document.getElementById('studentList').innerHTML = '<p>Belum ada siswa login</p>';
+      return;
+    }
+    let html = '<table><tr><th>Nama</th><th>Email</th><th>Mapel</th><th>Total Poin</th><th>Detail Pelanggaran</th><th>Status</th><th>Aksi</th></tr>';
+    data.forEach(s => {
+      let logDetail = s.logs.map(l => `${l.violationName} +${l.point}`).join('<br>');
+      html += `<tr>
+        <td>${s.name}</td>
+        <td>${s.email}</td>
+        <td>${s.subject}</td>
+        <td><b>${s.totalPoint}</b></td>
+        <td style="font-size:12px;">${logDetail || '-'}</td>
+        <td>${s.blocked? '🚫 Blokir' : '✅ Aktif'}</td>
+        <td><button class="danger" onclick="deleteStudent('${s.email}')">Hapus</button></td>
+      </tr>`;
+    });
+    html += '</table>';
+    document.getElementById('studentList').innerHTML = html;
+  } catch (e) {
+    document.getElementById('studentList').innerHTML = '<p style="color:red">Gagal load</p>';
   }
 }
 </script>
