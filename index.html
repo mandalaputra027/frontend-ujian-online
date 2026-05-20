@@ -155,9 +155,14 @@ document.getElementById('loginForm').addEventListener('submit', async function(e
 // Ganti di startExam: warningCount jadi totalPoint
 function startExam(formUrl) {
   document.getElementById('loginContainer').style.display = 'none';
+  
+  // Buka form di tab baru
+  window.open(formUrl, '_blank');
+  
+  // Tampilkan halaman "ujian berjalan"
   document.getElementById('examContainer').style.display = 'block';
-  document.getElementById('formFrame').src = formUrl;
-  document.getElementById('warningCount').textContent = 0; // ganti jadi totalPoint
+  document.getElementById('warningBox').innerHTML = '⚠️ Ujian berjalan. Jangan tutup tab ini dan jangan pindah tab!';
+  document.getElementById('warningCount').textContent = 0;
 
   document.documentElement.requestFullscreen?.();
   document.addEventListener('visibilitychange', handleTabSwitch);
