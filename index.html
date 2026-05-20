@@ -2,38 +2,91 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8">
-  <title>Ujian Online</title>
+  <title>Ujian Online SMP Kanisius Kudus</title>
   <style>
-    body { font-family: Arial; padding: 20px; background: #f0f2f5; }
-   .container { max-width: 500px; margin: auto; background: white; padding: 30px; border-radius: 10px; }
-    input, select, button { width: 100%; padding: 12px; margin: 8px 0; border-radius: 6px; border: 1px solid #ddd; box-sizing: border-box; }
-    button { background: #1a73e8; color: white; border: none; cursor: pointer; font-size: 16px; }
+    body { 
+      font-family: Arial, sans-serif; 
+      padding: 20px; 
+      background: #f0f2f5; 
+      margin: 0;
+    }
+    .container { 
+      max-width: 500px; 
+      margin: 20px auto; 
+      background: white; 
+      padding: 30px; 
+      border-radius: 10px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    .header {
+      text-align: center;
+      margin-bottom: 25px;
+      padding-bottom: 20px;
+      border-bottom: 2px solid #1a73e8;
+    }
+    .logo {
+      width: 120px;
+      height: auto;
+      margin-bottom: 10px;
+    }
+    .header h2 {
+      margin: 0;
+      color: #1a73e8;
+      font-size: 22px;
+    }
+    .header p {
+      margin: 5px 0 0 0;
+      color: #5f6368;
+      font-size: 14px;
+    }
+    input, select, button { 
+      width: 100%; 
+      padding: 12px; 
+      margin: 8px 0; 
+      border-radius: 6px; 
+      border: 1px solid #ddd; 
+      box-sizing: border-box;
+      font-size: 15px;
+    }
+    button { 
+      background: #1a73e8; 
+      color: white; 
+      border: none; 
+      cursor: pointer; 
+      font-weight: bold;
+    }
+    button:hover { background: #1557b0; }
     button:disabled { background: #ccc; }
     #examContainer, #blockedContainer, #warningBox { display: none; }
-    #warningBox { position: fixed; top: 20px; right: 20px; background: #ea4335; color: white; padding: 15px; border-radius: 8px; }
-    iframe { width: 100%; height: 80vh; border: none; }
-    img {
-  display: block;
-  margin: 0 auto;
-}
-
+    #warningBox { 
+      position: fixed; 
+      top: 20px; 
+      right: 20px; 
+      background: #ea4335; 
+      color: white; 
+      padding: 15px; 
+      border-radius: 8px;
+      z-index: 9999;
+    }
+    iframe { 
+      width: 100%; 
+      height: 80vh; 
+      border: none; 
+    }
   </style>
 </head>
 <body>
-  <div class="container" id="loginContainer">
-  <!-- HEADER LOGO + NAMA APLIKASI -->
-  <div class="header">
-    <img src="https://www.smpkanisiuskudus.sch.id/admin/img/logo-kanisius.png" alt="Logo SMP Kanisius Kudus" class="logo"width="250px">
-    <div class="title">
-      <h2 style="text-align: center;">SMP Kanisius Kudus</h2>
-      <p style="text-align: center;">Sistem Asesmen Online Anti-Curang</p>
-    </div>
-  </div>
+
+<!-- LOGIN -->
 <div class="container" id="loginContainer">
-  <h2>Ujian Online</h2>
+  <div class="header">
+    <img src="https://www.smpkanisiuskudus.sch.id/admin/img/logo-kanisius.png" alt="Logo SMP Kanisius Kudus" class="logo">
+    <h2>SMP Kanisius Kudus</h2>
+    <p>Sistem Asesmen Online Anti-Curang</p>
+  </div>
   <form id="loginForm">
     <input type="text" id="studentName" placeholder="Nama Lengkap" required>
-    <input type="email" id="studentEmail" placeholder="Email smpkanisiuskudus.sch.id" required>
+    <input type="email" id="studentEmail" placeholder="Email @smpkanisiuskudus.sch.id" required>
     <select id="subject" required>
       <option value="">Loading mapel...</option>
     </select>
@@ -41,39 +94,43 @@
   </form>
 </div>
 
+<!-- EXAM -->
 <div id="examContainer">
   <div id="warningBox">⚠️ Pelanggaran! Total poin: <span id="warningCount">0</span></div>
- <div id="examContainer" class="container" style="text-align:center;">
-  <h3>Ujian Sedang Berjalan</h3>
-  <p>Form ujian sudah dibuka di tab baru. Kerjakan di sana.</p>
-  <p style="color:red;">Jangan pindah tab atau tutup halaman ini!</p>
-  <div id="warningBox" style="position:relative; display:block;">⚠️ Total poin pelanggaran: <span id="warningCount">0</span></div>
-</div>
+  <div class="container" style="text-align:center;">
+    <h3>Ujian Sedang Berjalan</h3>
+    <p>Kerjakan soal di bawah ini. Jangan pindah tab!</p>
+    <iframe id="formFrame"></iframe>
+  </div>
 </div>
 
-<div class="container" id="blockedContainer">
+<!-- BLOCKED -->
+<div class="container" id="blockedContainer" style="text-align:center;">
   <h2 style="color: red;">🚫 AKSES DIBLOKIR</h2>
-  <p>Anda diblokir karena terlalu banyak pindah tab.</p>
+  <p>Anda diblokir karena terlalu banyak pelanggaran.</p>
 </div>
 
 <script>
 const CONFIG = {
-  BACKEND_URL: 'https://backend-ujian-online.onrender.com',
-  MAX_WARNINGS: 5
+  BACKEND_URL: 'https://backend-ujian-online.onrender.com'
 };
 
 let studentData = {};
-let warningCount = 0;
+let VIOLATIONS = {};
 let statusCheckInterval;
+let focusLostTime = 0;
+let violationCheckInterval;
 
-// FIX 1: Load mapel saat halaman dibuka
-window.addEventListener('DOMContentLoaded', loadSubjects);
+// Load mapel + jenis pelanggaran saat buka halaman
+window.addEventListener('DOMContentLoaded', async () => {
+  await loadViolations();
+  await loadSubjects();
+});
 
 async function loadSubjects() {
   try {
     const res = await fetch(`${CONFIG.BACKEND_URL}/api/subjects`);
     const subjects = await res.json();
-
     const select = document.getElementById('subject');
     select.innerHTML = '<option value="">-- Pilih Mapel --</option>';
 
@@ -87,14 +144,20 @@ async function loadSubjects() {
     }
   } catch (e) {
     document.getElementById('subject').innerHTML = '<option value="">Gagal load mapel</option>';
-    console.error(e);
   }
 }
 
-document.getElementById('loginForm').addEventListener('submit', async function(e) {
-  e.preventDefault();
+async function loadViolations() {
+  try {
+    const res = await fetch(`${CONFIG.BACKEND_URL}/api/violations`);
+    VIOLATIONS = await res.json();
+  } catch (e) {
+    console.error('Gagal load violations');
+  }
+}
 
-  document.getElementById('loginForm').addEventListener('submit', async function(e) {
+// Submit form login
+document.getElementById('loginForm').addEventListener('submit', async function(e) {
   e.preventDefault();
 
   const name = document.getElementById('studentName').value.trim();
@@ -102,8 +165,6 @@ document.getElementById('loginForm').addEventListener('submit', async function(e
   const subject = document.getElementById('subject').value;
 
   if (!subject) return alert('Pilih mapel dulu!');
-
-  // Validasi domain
   if (!email.endsWith('@smpkanisiuskudus.sch.id')) {
     return alert('Gunakan email sekolah: @smpkanisiuskudus.sch.id');
   }
@@ -123,7 +184,6 @@ document.getElementById('loginForm').addEventListener('submit', async function(e
     if (result.blocked) return showBlocked();
 
     studentData = { name, email, subject };
-    warningCount = result.totalPoint;
     startExam(result.formUrl);
 
   } catch (error) {
@@ -133,85 +193,50 @@ document.getElementById('loginForm').addEventListener('submit', async function(e
   }
 });
 
-  
-
-  try {
-    const response = await fetch(`${CONFIG.BACKEND_URL}/api/init`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, email, subject })
-    });
-
-    const result = await response.json();
-    if (!response.ok) throw new Error(result.error);
-    if (result.blocked) return showBlocked();
-
-    studentData = { name, email, subject };
-    warningCount = result.switchCount;
-    startExam(result.formUrl);
-
-  } catch (error) {
-    alert(error.message || 'Gagal terhubung ke server');
-    document.getElementById('startBtn').disabled = false;
-    document.getElementById('startBtn').textContent = 'Mulai Ujian';
-  }
-});
-
-// Ganti di startExam: warningCount jadi totalPoint
 function startExam(formUrl) {
   document.getElementById('loginContainer').style.display = 'none';
-  
-  // Buka form di tab baru
-  window.open(formUrl, '_blank');
-  
-  // Tampilkan halaman "ujian berjalan"
   document.getElementById('examContainer').style.display = 'block';
-  document.getElementById('warningBox').innerHTML = '⚠️ Ujian berjalan. Jangan tutup tab ini dan jangan pindah tab!';
+  document.getElementById('formFrame').src = formUrl;
   document.getElementById('warningCount').textContent = 0;
 
   document.documentElement.requestFullscreen?.();
-  document.addEventListener('visibilitychange', handleTabSwitch);
-  window.addEventListener('blur', handleTabSwitch);
+  setupViolationDetection();
   startStatusCheck();
 }
 
-function handleTabSwitch() {
-  if (document.hidden) {
-    warningCount++;
-    document.getElementById('warningCount').textContent = warningCount;
-    document.getElementById('warningBox').style.display = 'block';
-    logViolation('Tab switch');
-    if (warningCount >= CONFIG.MAX_WARNINGS) exitExam();
-  }
-}
-  let VIOLATIONS = {}; // global
+function setupViolationDetection() {
+  // Deteksi pindah tab
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) triggerViolation('TAB_SWITCH');
+  });
+  
+  // Deteksi blur
+  window.addEventListener('blur', () => triggerViolation('TAB_SWITCH'));
+  
+  // Deteksi copy paste klik kanan
+  document.addEventListener('copy', e => { e.preventDefault(); triggerViolation('COPY_PASTE'); });
+  document.addEventListener('paste', e => { e.preventDefault(); triggerViolation('COPY_PASTE'); });
+  document.addEventListener('contextmenu', e => { e.preventDefault(); triggerViolation('RIGHT_CLICK'); });
 
-// Load jenis pelanggaran dari backend
-async function loadViolations() {
-  try {
-    const res = await fetch(`${CONFIG.BACKEND_URL}/api/violations`);
-    VIOLATIONS = await res.json();
-  } catch (e) {
-    console.error('Gagal load violations');
-  }
-}
-
-window.addEventListener('DOMContentLoaded', async () => {
-  await loadViolations();
-  await loadSubjects();
-});
-
-// Ganti handleTabSwitch
-function handleTabSwitch() {
-  if (document.hidden) {
-    triggerViolation('TAB_SWITCH');
-  }
+  // Cek fokus tiap 1 detik untuk jaga-jaga
+  violationCheckInterval = setInterval(() => {
+    if (!document.hasFocus()) {
+      focusLostTime += 1;
+      if (focusLostTime >= 2) {
+        triggerViolation('TAB_SWITCH');
+        focusLostTime = 0;
+      }
+    } else {
+      focusLostTime = 0;
+    }
+  }, 1000);
 }
 
-// Fungsi baru buat trigger pelanggaran
 async function triggerViolation(violationId) {
-  document.getElementById('warningBox').style.display = 'block';
   const violation = VIOLATIONS[violationId];
+  if (!violation) return;
+
+  document.getElementById('warningBox').style.display = 'block';
   document.getElementById('warningBox').innerHTML = `⚠️ ${violation.name}! +${violation.point} poin`;
 
   try {
@@ -232,34 +257,6 @@ async function triggerViolation(violationId) {
   }, 3000);
 }
 
-// Tambah deteksi copy paste
-document.addEventListener('copy', e => {
-  e.preventDefault();
-  triggerViolation('COPY_PASTE');
-});
-
-document.addEventListener('paste', e => {
-  e.preventDefault();
-  triggerViolation('COPY_PASTE');
-});
-
-document.addEventListener('contextmenu', e => {
-  e.preventDefault();
-  triggerViolation('RIGHT_CLICK');
-});
-
-
-
-
-
-async function logViolation(event) {
-  await fetch(`${CONFIG.BACKEND_URL}/api/log`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email: studentData.email, event, switchCount: warningCount })
-  });
-}
-
 function startStatusCheck() {
   statusCheckInterval = setInterval(async () => {
     const res = await fetch(`${CONFIG.BACKEND_URL}/api/status?email=${studentData.email}`);
@@ -270,6 +267,7 @@ function startStatusCheck() {
 
 function exitExam() {
   clearInterval(statusCheckInterval);
+  clearInterval(violationCheckInterval);
   document.exitFullscreen?.();
   document.getElementById('examContainer').style.display = 'none';
   showBlocked();
