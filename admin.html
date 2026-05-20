@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <title>Admin Panel Ujian</title>
   <style>
-    body { font-family: Arial, sans-serif; padding: 20px; background: #f5f5f5; }
+    body { font-family: Arial; padding: 20px; background: #f5f5f5; }
    .container { max-width: 1000px; margin: auto; }
    .card { background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
     input, select, button { padding: 10px; margin: 5px; border-radius: 5px; border: 1px solid #ddd; }
@@ -28,8 +28,8 @@
   <div id="panel" class="hidden">
     <div class="card">
       <h3>📚 Kelola Mapel & Link Form</h3>
-      <input type="text" id="subjectId" placeholder="ID Mapel: mtk, ipa">
-      <input type="text" id="subjectName" placeholder="Nama Mapel: Matematika">
+      <input type="text" id="subjectId" placeholder="ID Mapel: mtk">
+      <input type="text" id="subjectName" placeholder="Nama: Matematika">
       <input type="text" id="formUrl" placeholder="Link Google Form" style="width: 400px;">
       <button onclick="saveSubject()">Simpan Mapel</button>
       <div id="subjectList"></div>
@@ -50,7 +50,6 @@ let adminPass = '';
 function login() {
   adminPass = document.getElementById('adminPass').value;
   if (!adminPass) return alert('Masukkan password!');
-
   document.getElementById('loginCard').classList.add('hidden');
   document.getElementById('panel').classList.remove('hidden');
   loadSubjects();
@@ -66,44 +65,32 @@ async function api(path, method='GET', body=null) {
     }
   };
   if (body) opts.body = JSON.stringify(body);
-  
   const res = await fetch(API_URL + path, opts);
-  
   if (res.status === 401) {
-    alert('Password admin salah!');
+    alert('Password salah!');
     location.reload();
     throw new Error('Unauthorized');
   }
-  
-  if (!res.ok) {
-    const err = await res.json();
-    throw new Error(err.error || 'Server error');
-  }
-  
+  if (!res.ok) throw new Error('Server error');
   return res.json();
 }
 
-// FIX: Loop object, bukan array
 async function loadSubjects() {
   try {
-    const data = await api('/admin/subjects'); // ini object: {mtk: {...}, ipa: {...}}
+    const data = await api('/admin/subjects');
     let html = '<table><tr><th>ID</th><th>Nama</th><th>Link Form</th><th>Aksi</th></tr>';
-    
-    // Loop object pakai for...in
     for (let id in data) {
       html += `<tr>
         <td>${id}</td>
         <td>${data[id].name}</td>
-        <td style="word-break:break-all;">${data[id].formUrl || '-'}</td>
+        <td style="word-break:break-all;">${data[id].formUrl || '<i>Belum diisi</i>'}</td>
         <td><button onclick="editSubject('${id}', '${data[id].name}', '${data[id].formUrl || ''}')">Edit</button></td>
       </tr>`;
     }
-    
     html += '</table>';
     document.getElementById('subjectList').innerHTML = html;
   } catch (e) {
-    console.error(e);
-    document.getElementById('subjectList').innerHTML = '<p style="color:red">Gagal load data mapel. Cek password!</p>';
+    document.getElementById('subjectList').innerHTML = '<p style="color:red">Gagal load</p>';
   }
 }
 
@@ -117,29 +104,26 @@ async function saveSubject() {
   const id = document.getElementById('subjectId').value.trim();
   const name = document.getElementById('subjectName').value.trim();
   const formUrl = document.getElementById('formUrl').value.trim();
-
-  if (!id || !name) return alert('ID dan Nama mapel wajib diisi!');
-
+  if (!id ||!name) return alert('ID dan Nama wajib!');
   try {
     await api('/admin/subjects', 'POST', { id, name, formUrl });
-    alert('Mapel tersimpan!');
+    alert('Tersimpan! Mapel akan muncul di dropdown murid jika formUrl diisi.');
     document.getElementById('subjectId').value = '';
     document.getElementById('subjectName').value = '';
     document.getElementById('formUrl').value = '';
     loadSubjects();
   } catch (e) {
-    alert('Gagal simpan: ' + e.message);
+    alert('Gagal simpan');
   }
 }
 
 async function loadStudents() {
   try {
-    const data = await api('/admin/students'); // ini array Object.values(studentsDB)
+    const data = await api('/admin/students');
     if (!data.length) {
       document.getElementById('studentList').innerHTML = '<p>Belum ada siswa login</p>';
       return;
     }
-
     let html = '<table><tr><th>Nama</th><th>Email</th><th>Mapel</th><th>Pelanggaran</th><th>Status</th><th>Aksi</th></tr>';
     data.forEach(s => {
       html += `<tr>
@@ -147,26 +131,21 @@ async function loadStudents() {
         <td>${s.email}</td>
         <td>${s.subject}</td>
         <td>${s.switchCount}</td>
-        <td>${s.blocked ? '🚫 Blokir' : '✅ Aktif'}</td>
+        <td>${s.blocked? '🚫 Blokir' : '✅ Aktif'}</td>
         <td><button class="danger" onclick="deleteStudent('${s.email}')">Hapus</button></td>
       </tr>`;
     });
     html += '</table>';
     document.getElementById('studentList').innerHTML = html;
   } catch (e) {
-    console.error(e);
-    document.getElementById('studentList').innerHTML = '<p style="color:red">Gagal load data siswa</p>';
+    document.getElementById('studentList').innerHTML = '<p style="color:red">Gagal load</p>';
   }
 }
 
 async function deleteStudent(email) {
   if (confirm('Hapus data siswa ini?')) {
-    try {
-      await api(`/admin/student/${email}`, 'DELETE');
-      loadStudents();
-    } catch (e) {
-      alert('Gagal hapus: ' + e.message);
-    }
+    await api(`/admin/student/${email}`, 'DELETE');
+    loadStudents();
   }
 }
 </script>
