@@ -28,7 +28,8 @@
 </div>
 
 <div id="examContainer">
-  <div id="warningBox">⚠️ Jangan pindah tab! Pelanggaran: <span id="warningCount">0</span>/5</div>
+  // Ganti di HTML: #warningCount jadi total poin
+  <div id="warningBox">⚠️ Pelanggaran! Total poin: <span id="warningCount">0</span></div>
   <iframe id="formFrame"></iframe>
 </div>
 
@@ -106,16 +107,16 @@ document.getElementById('loginForm').addEventListener('submit', async function(e
   }
 });
 
+// Ganti di startExam: warningCount jadi totalPoint
 function startExam(formUrl) {
   document.getElementById('loginContainer').style.display = 'none';
   document.getElementById('examContainer').style.display = 'block';
   document.getElementById('formFrame').src = formUrl;
-  document.getElementById('warningCount').textContent = warningCount;
+  document.getElementById('warningCount').textContent = 0; // ganti jadi totalPoint
 
   document.documentElement.requestFullscreen?.();
   document.addEventListener('visibilitychange', handleTabSwitch);
   window.addEventListener('blur', handleTabSwitch);
-  document.addEventListener('contextmenu', e => e.preventDefault());
   startStatusCheck();
 }
 
@@ -128,6 +129,73 @@ function handleTabSwitch() {
     if (warningCount >= CONFIG.MAX_WARNINGS) exitExam();
   }
 }
+  let VIOLATIONS = {}; // global
+
+// Load jenis pelanggaran dari backend
+async function loadViolations() {
+  try {
+    const res = await fetch(`${CONFIG.BACKEND_URL}/api/violations`);
+    VIOLATIONS = await res.json();
+  } catch (e) {
+    console.error('Gagal load violations');
+  }
+}
+
+window.addEventListener('DOMContentLoaded', async () => {
+  await loadViolations();
+  await loadSubjects();
+});
+
+// Ganti handleTabSwitch
+function handleTabSwitch() {
+  if (document.hidden) {
+    triggerViolation('TAB_SWITCH');
+  }
+}
+
+// Fungsi baru buat trigger pelanggaran
+async function triggerViolation(violationId) {
+  document.getElementById('warningBox').style.display = 'block';
+  const violation = VIOLATIONS[violationId];
+  document.getElementById('warningBox').innerHTML = `⚠️ ${violation.name}! +${violation.point} poin`;
+
+  try {
+    const res = await fetch(`${CONFIG.BACKEND_URL}/api/log`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: studentData.email, violationId })
+    });
+    const result = await res.json();
+    document.getElementById('warningCount').textContent = result.totalPoint;
+    if (result.blocked) exitExam();
+  } catch (e) {
+    console.error(e);
+  }
+
+  setTimeout(() => {
+    document.getElementById('warningBox').style.display = 'none';
+  }, 3000);
+}
+
+// Tambah deteksi copy paste
+document.addEventListener('copy', e => {
+  e.preventDefault();
+  triggerViolation('COPY_PASTE');
+});
+
+document.addEventListener('paste', e => {
+  e.preventDefault();
+  triggerViolation('COPY_PASTE');
+});
+
+document.addEventListener('contextmenu', e => {
+  e.preventDefault();
+  triggerViolation('RIGHT_CLICK');
+});
+
+
+
+
 
 async function logViolation(event) {
   await fetch(`${CONFIG.BACKEND_URL}/api/log`, {
