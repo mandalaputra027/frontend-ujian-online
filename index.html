@@ -205,25 +205,69 @@ function startExam(formUrl) {
 }
 
 function setupViolationDetection() {
+  let loginInProgress = false;
+  let focusLostTime = 0;
+  let originalWidth = window.innerWidth;
+  let originalHeight = window.innerHeight;
+  const iframe = document.getElementById('formFrame');
+
+  // Deteksi kalau iframe pindah ke halaman login Google
+  iframe.addEventListener('load', () => {
+    try {
+      const iframeUrl = iframe.contentWindow.location.href;
+      if (iframeUrl.includes('accounts.google.com')) {
+        loginInProgress = true;
+        console.log('Login Google terdeteksi, deteksi pelanggaran dimatikan sementara');
+        
+        setTimeout(() => {
+          loginInProgress = false;
+        }, 30000);
+      } else if (iframeUrl.includes('docs.google.com/forms')) {
+        loginInProgress = false;
+        console.log('Kembali ke form, deteksi pelanggaran dinyalakan');
+      }
+    } catch (e) {
+      // Error cross-origin = masih di form Google, anggap aman
+    }
+  });
+
+  // Wrapper biar bisa skip pelanggaran saat login
+  function safeTriggerViolation(violationId) {
+    if (loginInProgress) {
+      console.log('Skip pelanggaran karena lagi login:', violationId);
+      return;
+    }
+    triggerViolation(violationId);
+  }
+
   // Deteksi pindah tab
   document.addEventListener('visibilitychange', () => {
-    if (document.hidden) triggerViolation('TAB_SWITCH');
+    if (document.hidden) safeTriggerViolation('TAB_SWITCH');
   });
   
   // Deteksi blur
-  window.addEventListener('blur', () => triggerViolation('TAB_SWITCH'));
-  
-  // Deteksi copy paste klik kanan
-  document.addEventListener('copy', e => { e.preventDefault(); triggerViolation('COPY_PASTE'); });
-  document.addEventListener('paste', e => { e.preventDefault(); triggerViolation('COPY_PASTE'); });
-  document.addEventListener('contextmenu', e => { e.preventDefault(); triggerViolation('RIGHT_CLICK'); });
+  window.addEventListener('blur', () => safeTriggerViolation('TAB_SWITCH'));
 
-  // Cek fokus tiap 1 detik untuk jaga-jaga
+  // Deteksi copy paste klik kanan
+  document.addEventListener('copy', e => { e.preventDefault(); safeTriggerViolation('COPY_PASTE'); });
+  document.addEventListener('paste', e => { e.preventDefault(); safeTriggerViolation('COPY_PASTE'); });
+  document.addEventListener('contextmenu', e => { e.preventDefault(); safeTriggerViolation('RIGHT_CLICK'); });
+
+  // Deteksi split screen
+  window.addEventListener('resize', () => {
+    if (loginInProgress) return;
+    if (window.innerWidth < originalWidth * 0.7 || window.innerHeight < originalHeight * 0.7) {
+      safeTriggerViolation('SPLIT_SCREEN');
+    }
+  });
+
+  // Cek fokus tiap 1 detik
   violationCheckInterval = setInterval(() => {
+    if (loginInProgress) return;
     if (!document.hasFocus()) {
       focusLostTime += 1;
       if (focusLostTime >= 2) {
-        triggerViolation('TAB_SWITCH');
+        safeTriggerViolation('TAB_SWITCH');
         focusLostTime = 0;
       }
     } else {
