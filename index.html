@@ -207,9 +207,19 @@ function startExam(formUrl) {
 function setupViolationDetection() {
   let loginInProgress = false;
   let focusLostTime = 0;
+  let ignoreViolationsUntil = 0; // grace period timestamp
   let originalWidth = window.innerWidth;
   let originalHeight = window.innerHeight;
   const iframe = document.getElementById('formFrame');
+
+  // Kasih grace period 2 detik tiap kali klik di iframe
+  iframe.addEventListener('click', () => {
+    ignoreViolationsUntil = Date.now() + 2000;
+  });
+
+  iframe.addEventListener('focus', () => {
+    ignoreViolationsUntil = Date.now() + 2000;
+  });
 
   // Deteksi kalau iframe pindah ke halaman login Google
   iframe.addEventListener('load', () => {
@@ -217,24 +227,20 @@ function setupViolationDetection() {
       const iframeUrl = iframe.contentWindow.location.href;
       if (iframeUrl.includes('accounts.google.com')) {
         loginInProgress = true;
-        console.log('Login Google terdeteksi, deteksi pelanggaran dimatikan sementara');
-        
-        setTimeout(() => {
-          loginInProgress = false;
-        }, 30000);
+        ignoreViolationsUntil = Date.now() + 30000; // grace period panjang buat login
       } else if (iframeUrl.includes('docs.google.com/forms')) {
         loginInProgress = false;
-        console.log('Kembali ke form, deteksi pelanggaran dinyalakan');
+        ignoreViolationsUntil = Date.now() + 2000; // grace period setelah balik ke form
       }
     } catch (e) {
-      // Error cross-origin = masih di form Google, anggap aman
+      // Cross-origin = masih di form, kasih grace period kecil
+      ignoreViolationsUntil = Date.now() + 2000;
     }
   });
 
-  // Wrapper biar bisa skip pelanggaran saat login
   function safeTriggerViolation(violationId) {
-    if (loginInProgress) {
-      console.log('Skip pelanggaran karena lagi login:', violationId);
+    if (loginInProgress || Date.now() < ignoreViolationsUntil) {
+      console.log('Skip pelanggaran, masih grace period:', violationId);
       return;
     }
     triggerViolation(violationId);
@@ -255,7 +261,7 @@ function setupViolationDetection() {
 
   // Deteksi split screen
   window.addEventListener('resize', () => {
-    if (loginInProgress) return;
+    if (Date.now() < ignoreViolationsUntil) return;
     if (window.innerWidth < originalWidth * 0.7 || window.innerHeight < originalHeight * 0.7) {
       safeTriggerViolation('SPLIT_SCREEN');
     }
@@ -263,7 +269,7 @@ function setupViolationDetection() {
 
   // Cek fokus tiap 1 detik
   violationCheckInterval = setInterval(() => {
-    if (loginInProgress) return;
+    if (Date.now() < ignoreViolationsUntil) return;
     if (!document.hasFocus()) {
       focusLostTime += 1;
       if (focusLostTime >= 2) {
