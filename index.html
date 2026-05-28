@@ -302,6 +302,11 @@ function setupViolationDetection() {
       if (e.matches) checkSplitScreen();
     });
   }
+  document.addEventListener('fullscreenchange', () => {
+  if (!document.fullscreenElement) {
+    safeTriggerViolation('EXIT_FULLSCREEN');
+  }
+});
 
   // Cek fokus tiap 1 detik
   violationCheckInterval = setInterval(() => {
