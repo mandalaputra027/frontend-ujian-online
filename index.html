@@ -256,57 +256,7 @@ function setupViolationDetection() {
   document.addEventListener('paste', e => { e.preventDefault(); safeTriggerViolation('COPY_PASTE'); });
   document.addEventListener('contextmenu', e => { e.preventDefault(); safeTriggerViolation('RIGHT_CLICK'); });
 
-  // 3. ANTI SPLITSCREEN VERSI KUAT
-  let lastWidth = window.innerWidth;
-  let lastHeight = window.innerHeight;
 
-  function checkSplitScreen() {
-    if (Date.now() < ignoreViolationsUntil) return;
-
-    const currentWidth = window.innerWidth;
-    const currentHeight = window.innerHeight;
-    const screenWidth = screen.width;
-    const screenHeight = screen.height;
-
-    // Layer 1: Rasio window vs layar < 60%
-    if (currentWidth < screenWidth * 0.6 || currentHeight < screenHeight * 0.7) {
-      safeTriggerViolation('SPLIT_SCREEN');
-      return;
-    }
-
-    // Layer 2: Cek perubahan ukuran tiba-tiba > 30%
-    if (Math.abs(currentWidth - lastWidth) > screenWidth * 0.3 || 
-        Math.abs(currentHeight - lastHeight) > screenHeight * 0.3) {
-      safeTriggerViolation('SPLIT_SCREEN');
-      return;
-    }
-
-    // Layer 3: Cek DevTools kebuka / split
-    const widthDiff = window.outerWidth - window.innerWidth;
-    const heightDiff = window.outerHeight - window.innerHeight;
-    if (widthDiff > 200 || heightDiff > 150) {
-      safeTriggerViolation('DEVTOOLS_OPEN');
-      return;
-    }
-
-    lastWidth = currentWidth;
-    lastHeight = currentHeight;
-  }
-
-  window.addEventListener('resize', checkSplitScreen);
-
-  // Layer 4: Cek MediaQuery display-mode
-  if (window.matchMedia('(display-mode: windowed)').matches) {
-    const mq = window.matchMedia('(display-mode: windowed)');
-    mq.addEventListener('change', (e) => {
-      if (e.matches) checkSplitScreen();
-    });
-  }
-  document.addEventListener('fullscreenchange', () => {
-  if (!document.fullscreenElement) {
-    safeTriggerViolation('EXIT_FULLSCREEN');
-  }
-});
 
   // Cek fokus tiap 1 detik
   violationCheckInterval = setInterval(() => {
