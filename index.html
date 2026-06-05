@@ -2,324 +2,791 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8">
-  <title>Ujian Online SMP Kanisius Kudus</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Asesmen Online — SMP Kanisius Kudus</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
   <style>
-    body { 
-      font-family: Arial, sans-serif; 
-      padding: 20px; 
-      background: #f0f2f5; 
-      margin: 0;
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #0f1117;
+      --surface:   #181c27;
+      --surface2:  #1e2336;
+      --border:    rgba(255,255,255,0.08);
+      --border2:   rgba(255,255,255,0.14);
+      --accent:    #4f7eff;
+      --accent2:   #7b9fff;
+      --danger:    #ff4f4f;
+      --warn:      #f5a623;
+      --success:   #3ecf8e;
+      --text:      #e8eaf2;
+      --muted:     #7c8299;
+      --radius:    12px;
+      --radius-lg: 18px;
     }
-    .container { 
-      max-width: 500px; 
-      margin: 20px auto; 
-      background: white; 
-      padding: 30px; 
+
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 15px;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ─── NOISE TEXTURE ─── */
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ─── GLOW ORBS ─── */
+    .orb {
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(80px);
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0.18;
+      animation: pulse 8s ease-in-out infinite;
+    }
+    .orb-1 { width: 500px; height: 500px; background: var(--accent); top: -200px; left: -150px; animation-delay: 0s; }
+    .orb-2 { width: 400px; height: 400px; background: #9b59f7; bottom: -100px; right: -100px; animation-delay: 4s; }
+    @keyframes pulse { 0%,100%{opacity:.18} 50%{opacity:.26} }
+
+    /* ─── PAGES ─── */
+    .page { position: relative; z-index: 1; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px; }
+    .page.hidden { display: none !important; }
+
+    /* ─── CARD ─── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border2);
+      border-radius: var(--radius-lg);
+      padding: 40px;
+      width: 100%;
+      max-width: 460px;
+      box-shadow: 0 0 0 1px rgba(255,255,255,0.04), 0 24px 48px rgba(0,0,0,0.4);
+      animation: fadeUp 0.5s ease both;
+    }
+    @keyframes fadeUp { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+
+    /* ─── HEADER ─── */
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 32px;
+      padding-bottom: 24px;
+      border-bottom: 1px solid var(--border);
+    }
+    .brand-logo {
+      width: 48px; height: 48px;
       border-radius: 10px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      object-fit: contain;
+      background: white;
+      padding: 4px;
+      flex-shrink: 0;
     }
-    .header {
+    .brand-logo-fallback {
+      width: 48px; height: 48px;
+      border-radius: 10px;
+      background: var(--accent);
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'DM Serif Display', serif;
+      font-size: 20px; color: white; flex-shrink: 0;
+    }
+    .brand-text h1 {
+      font-family: 'DM Serif Display', serif;
+      font-size: 18px;
+      font-weight: 400;
+      color: var(--text);
+      letter-spacing: -0.3px;
+    }
+    .brand-text p {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 1px;
+      font-family: 'DM Mono', monospace;
+      letter-spacing: 0.5px;
+    }
+
+    /* ─── FORM ─── */
+    .form-group { margin-bottom: 16px; }
+    label {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--muted);
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      margin-bottom: 7px;
+    }
+    input, select {
+      width: 100%;
+      padding: 12px 16px;
+      background: var(--surface2);
+      border: 1px solid var(--border2);
+      border-radius: var(--radius);
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      outline: none;
+      appearance: none;
+    }
+    input::placeholder { color: var(--muted); }
+    input:focus, select:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(79,126,255,0.18);
+    }
+    input.error { border-color: var(--danger); }
+    select {
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%237c8299' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14L2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 14px center;
+      padding-right: 36px;
+      cursor: pointer;
+    }
+    select option { background: var(--surface2); color: var(--text); }
+
+    .field-hint { font-size: 11px; color: var(--muted); margin-top: 5px; font-family: 'DM Mono', monospace; }
+
+    /* ─── BUTTON ─── */
+    .btn {
+      width: 100%;
+      padding: 13px;
+      border-radius: var(--radius);
+      border: none;
+      cursor: pointer;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 15px;
+      font-weight: 600;
+      transition: all 0.2s;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+    }
+    .btn-primary {
+      background: var(--accent);
+      color: white;
+      box-shadow: 0 4px 20px rgba(79,126,255,0.35);
+    }
+    .btn-primary:hover:not(:disabled) {
+      background: var(--accent2);
+      box-shadow: 0 6px 28px rgba(79,126,255,0.5);
+      transform: translateY(-1px);
+    }
+    .btn-primary:active:not(:disabled) { transform: translateY(0); }
+    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
+    .btn-danger { background: var(--danger); color: white; box-shadow: 0 4px 20px rgba(255,79,79,0.3); }
+
+    .spinner {
+      width: 16px; height: 16px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ─── ALERT ─── */
+    .alert {
+      padding: 12px 16px;
+      border-radius: var(--radius);
+      font-size: 13px;
+      margin-bottom: 16px;
+      display: none;
+      align-items: flex-start;
+      gap: 10px;
+      line-height: 1.5;
+    }
+    .alert.show { display: flex; }
+    .alert-danger { background: rgba(255,79,79,0.1); border: 1px solid rgba(255,79,79,0.25); color: #ff8080; }
+    .alert-warn   { background: rgba(245,166,35,0.1); border: 1px solid rgba(245,166,35,0.25); color: #f5c35a; }
+    .alert-icon { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+
+    /* ─── EXAM PAGE ─── */
+    #examPage {
+      flex-direction: column;
+      background: var(--bg);
+      padding: 0;
+      align-items: stretch;
+    }
+
+    .exam-topbar {
+      position: fixed; top: 0; left: 0; right: 0;
+      height: 52px;
+      background: rgba(15,17,23,0.92);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center;
+      padding: 0 20px;
+      gap: 16px;
+      z-index: 100;
+    }
+    .topbar-brand {
+      font-family: 'DM Serif Display', serif;
+      font-size: 16px;
+      color: var(--text);
+      flex-shrink: 0;
+    }
+    .topbar-sep { height: 20px; width: 1px; background: var(--border2); }
+    .topbar-info {
+      font-size: 13px;
+      color: var(--muted);
+      flex: 1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .topbar-info span { color: var(--text); font-weight: 500; }
+
+    /* violation pill */
+    .violation-pill {
+      display: flex; align-items: center; gap: 8px;
+      padding: 5px 12px;
+      border-radius: 99px;
+      font-size: 12px; font-weight: 600;
+      background: rgba(245,166,35,0.12);
+      border: 1px solid rgba(245,166,35,0.3);
+      color: var(--warn);
+      transition: all 0.3s;
+      flex-shrink: 0;
+    }
+    .violation-pill.danger {
+      background: rgba(255,79,79,0.12);
+      border-color: rgba(255,79,79,0.3);
+      color: var(--danger);
+    }
+    .violation-pill svg { width: 13px; height: 13px; flex-shrink: 0; }
+
+    /* violation toast */
+    .violation-toast {
+      position: fixed; top: 68px; right: 16px;
+      max-width: 320px;
+      background: var(--surface);
+      border: 1px solid rgba(245,166,35,0.4);
+      border-radius: var(--radius);
+      padding: 12px 16px;
+      display: flex; align-items: flex-start; gap: 10px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+      z-index: 200;
+      transform: translateX(120%);
+      transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
+    }
+    .violation-toast.show { transform: translateX(0); }
+    .violation-toast.danger-toast { border-color: rgba(255,79,79,0.4); }
+    .toast-icon { font-size: 18px; flex-shrink: 0; }
+    .toast-title { font-size: 13px; font-weight: 600; color: var(--warn); }
+    .toast-title.danger-text { color: var(--danger); }
+    .toast-body { font-size: 12px; color: var(--muted); margin-top: 2px; }
+    .toast-pts { font-family: 'DM Mono', monospace; font-size: 12px; font-weight: 500; }
+
+    /* iframe area */
+    .exam-frame-wrap {
+      margin-top: 52px;
+      flex: 1;
+      height: calc(100vh - 52px);
+    }
+    #formFrame {
+      width: 100%; height: 100%;
+      border: none;
+      display: block;
+    }
+
+    /* ─── BLOCKED PAGE ─── */
+    .blocked-card {
+      background: var(--surface);
+      border: 1px solid rgba(255,79,79,0.25);
+      border-radius: var(--radius-lg);
+      padding: 48px 40px;
+      width: 100%; max-width: 420px;
       text-align: center;
-      margin-bottom: 25px;
-      padding-bottom: 20px;
-      border-bottom: 2px solid #1a73e8;
+      box-shadow: 0 0 60px rgba(255,79,79,0.08);
+      animation: fadeUp 0.5s ease both;
     }
-    .logo {
-      width: 120px;
-      height: auto;
+    .blocked-icon {
+      width: 72px; height: 72px;
+      background: rgba(255,79,79,0.1);
+      border: 1px solid rgba(255,79,79,0.25);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 24px;
+      font-size: 32px;
+    }
+    .blocked-card h2 {
+      font-family: 'DM Serif Display', serif;
+      font-size: 26px;
+      font-weight: 400;
+      color: var(--danger);
       margin-bottom: 10px;
     }
-    .header h2 {
-      margin: 0;
-      color: #1a73e8;
-      font-size: 22px;
+    .blocked-card p { color: var(--muted); font-size: 14px; line-height: 1.7; }
+    .blocked-meta {
+      margin-top: 24px;
+      padding: 14px 18px;
+      background: var(--surface2);
+      border-radius: 10px;
+      font-family: 'DM Mono', monospace;
+      font-size: 12px;
+      color: var(--muted);
+      text-align: left;
     }
-    .header p {
-      margin: 5px 0 0 0;
-      color: #5f6368;
-      font-size: 14px;
-    }
-    input, select, button { 
-      width: 100%; 
-      padding: 12px; 
-      margin: 8px 0; 
-      border-radius: 6px; 
-      border: 1px solid #ddd; 
-      box-sizing: border-box;
-      font-size: 15px;
-    }
-    button { 
-      background: #1a73e8; 
-      color: white; 
-      border: none; 
-      cursor: pointer; 
-      font-weight: bold;
-    }
-    button:hover { background: #1557b0; }
-    button:disabled { background: #ccc; }
-    #examContainer, #blockedContainer, #warningBox { display: none; }
-    #warningBox { 
-      position: fixed; 
-      top: 20px; 
-      right: 20px; 
-      background: #ea4335; 
-      color: white; 
-      padding: 15px; 
-      border-radius: 8px;
+    .blocked-meta .row { display: flex; justify-content: space-between; margin-bottom: 4px; }
+    .blocked-meta .row:last-child { margin-bottom: 0; }
+    .blocked-meta .val { color: var(--text); }
+
+    /* ─── FULLSCREEN NOTICE ─── */
+    .fullscreen-notice {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.85);
+      backdrop-filter: blur(8px);
       z-index: 9999;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 20px;
+      text-align: center;
+      padding: 40px;
     }
-    iframe { 
-      width: 100%; 
-      height: 80vh; 
-      border: none; 
-    }
+    .fullscreen-notice.hidden { display: none; }
+    .fullscreen-notice h3 { font-family: 'DM Serif Display', serif; font-size: 22px; font-weight: 400; }
+    .fullscreen-notice p { color: var(--muted); font-size: 14px; max-width: 360px; }
   </style>
 </head>
 <body>
 
-<!-- LOGIN -->
-<div class="container" id="loginContainer">
-  <div class="header">
-    <img src="https://www.smpkanisiuskudus.sch.id/admin/img/logo-kanisius.png" alt="Logo SMP Kanisius Kudus" class="logo">
-    <h2>SMP Kanisius Kudus</h2>
-    <p>Sistem Asesmen Online Anti-Curang</p>
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+
+<!-- ════════════════════════════ LOGIN ════════════════════════════ -->
+<div class="page" id="loginPage">
+  <div class="card">
+
+    <div class="brand">
+      <img
+        src="https://www.smpkanisiuskudus.sch.id/admin/img/logo-kanisius.png"
+        alt="Logo SMP Kanisius"
+        class="brand-logo"
+        onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
+      >
+      <div class="brand-logo-fallback" style="display:none">K</div>
+      <div class="brand-text">
+        <h1>SMP Kanisius Kudus</h1>
+        <p>SISTEM ASESMEN ONLINE</p>
+      </div>
+    </div>
+
+    <div class="alert alert-danger" id="loginAlert">
+      <span class="alert-icon">⚠</span>
+      <span id="loginAlertMsg"></span>
+    </div>
+
+    <div class="form-group">
+      <label for="studentName">Nama Lengkap</label>
+      <input type="text" id="studentName" placeholder="Nama sesuai absen" autocomplete="off" spellcheck="false">
+    </div>
+
+    <div class="form-group">
+      <label for="studentEmail">Email Sekolah</label>
+      <input type="email" id="studentEmail" placeholder="nama@smpkanisiuskudus.sch.id" autocomplete="off">
+      <p class="field-hint">Harus menggunakan email @smpkanisiuskudus.sch.id</p>
+    </div>
+
+    <div class="form-group">
+      <label for="subject">Mata Pelajaran</label>
+      <select id="subject">
+        <option value="">Memuat daftar mapel…</option>
+      </select>
+    </div>
+
+    <button class="btn btn-primary" id="startBtn" onclick="handleLogin()">
+      Mulai Ujian
+    </button>
+
   </div>
-  <form id="loginForm">
-    <input type="text" id="studentName" placeholder="Nama Lengkap" required>
-    <input type="email" id="studentEmail" placeholder="Email @smpkanisiuskudus.sch.id" required>
-    <select id="subject" required>
-      <option value="">Loading mapel...</option>
-    </select>
-    <button type="submit" id="startBtn">Mulai Ujian</button>
-  </form>
 </div>
 
-<!-- EXAM -->
-<div id="examContainer">
-  <div id="warningBox">⚠️ Pelanggaran! Total poin: <span id="warningCount">0</span></div>
-  <div class="container" style="text-align:center;">
-    <h3>Ujian Sedang Berjalan</h3>
-    <p>Kerjakan soal di bawah ini. Jangan pindah tab!</p>
-    <iframe id="formFrame"></iframe>
+<!-- ════════════════════════════ EXAM ════════════════════════════ -->
+<div class="page hidden" id="examPage">
+
+  <!-- Topbar -->
+  <div class="exam-topbar">
+    <div class="topbar-brand">Kanisius</div>
+    <div class="topbar-sep"></div>
+    <div class="topbar-info" id="topbarInfo">Ujian sedang berjalan</div>
+    <div class="violation-pill" id="violationPill">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+      </svg>
+      <span id="violationLabel">0 poin</span>
+    </div>
   </div>
+
+  <!-- Violation toast -->
+  <div class="violation-toast" id="violationToast">
+    <span class="toast-icon" id="toastIcon">⚠️</span>
+    <div>
+      <div class="toast-title" id="toastTitle">Pelanggaran terdeteksi</div>
+      <div class="toast-body" id="toastBody"></div>
+    </div>
+  </div>
+
+  <!-- Fullscreen reminder -->
+  <div class="fullscreen-notice hidden" id="fsNotice">
+    <h3>Aktifkan Layar Penuh</h3>
+    <p>Ujian harus dijalankan dalam mode layar penuh. Klik tombol di bawah untuk melanjutkan.</p>
+    <button class="btn btn-primary" style="max-width:240px" onclick="enterFullscreen()">Aktifkan</button>
+  </div>
+
+  <!-- Google Form iframe -->
+  <div class="exam-frame-wrap">
+    <iframe id="formFrame" title="Form Ujian" sandbox="allow-forms allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox"></iframe>
+  </div>
+
 </div>
 
-<!-- BLOCKED -->
-<div class="container" id="blockedContainer" style="text-align:center;">
-  <h2 style="color: red;">🚫 AKSES DIBLOKIR</h2>
-  <p>Anda diblokir karena terlalu banyak pelanggaran.</p>
+<!-- ════════════════════════════ BLOCKED ════════════════════════════ -->
+<div class="page hidden" id="blockedPage">
+  <div class="blocked-card">
+    <div class="blocked-icon">🚫</div>
+    <h2>Akses Diblokir</h2>
+    <p>Sesi ujian Anda telah dihentikan karena akumulasi poin pelanggaran melebihi batas yang ditentukan.</p>
+    <div class="blocked-meta" id="blockedMeta">
+      <div class="row"><span>Nama</span><span class="val" id="bName">—</span></div>
+      <div class="row"><span>Mapel</span><span class="val" id="bSubject">—</span></div>
+      <div class="row"><span>Total poin</span><span class="val" id="bPoints" style="color:var(--danger)">—</span></div>
+    </div>
+  </div>
 </div>
 
 <script>
+"use strict";
+
+/* ─────────────────────────────────────────────
+   CONFIG
+───────────────────────────────────────────── */
 const CONFIG = {
-  BACKEND_URL: 'https://backend-ujian-online.onrender.com'
+  BACKEND_URL: 'https://backend-ujian-online.onrender.com',
+  STATUS_INTERVAL_MS: 5000,
+  TOAST_DURATION_MS: 4000,
+  DEBOUNCE_VIOLATION_MS: 1500,
+  FOCUS_LOST_THRESHOLD_S: 2,
 };
 
-let studentData = {};
-let VIOLATIONS = {};
-let statusCheckInterval;
-let focusLostTime = 0;
-let violationCheckInterval;
+/* ─────────────────────────────────────────────
+   STATE
+───────────────────────────────────────────── */
+const state = {
+  student: null,      // { name, email, subject, subjectName }
+  violations: {},     // config dari server
+  totalPoints: 0,
+  blocked: false,
+  statusTimer: null,
+  focusTimer: null,
+  lastViolationTime: 0,
+  gracePeriodUntil: 0,
+  focusLostSeconds: 0,
+};
 
-// Load mapel + jenis pelanggaran saat buka halaman
-window.addEventListener('DOMContentLoaded', async () => {
-  await loadViolations();
-  await loadSubjects();
+/* ─────────────────────────────────────────────
+   INIT
+───────────────────────────────────────────── */
+window.addEventListener('DOMContentLoaded', () => {
+  loadSubjects();
+  loadViolations();
 });
 
 async function loadSubjects() {
+  const sel = document.getElementById('subject');
   try {
     const res = await fetch(`${CONFIG.BACKEND_URL}/api/subjects`);
+    if (!res.ok) throw new Error('Gagal');
     const subjects = await res.json();
-    const select = document.getElementById('subject');
-    select.innerHTML = '<option value="">-- Pilih Mapel --</option>';
+    const keys = Object.keys(subjects);
 
-    if (Object.keys(subjects).length === 0) {
-      select.innerHTML = '<option value="">Admin belum set mapel</option>';
+    if (keys.length === 0) {
+      sel.innerHTML = '<option value="">Belum ada mapel tersedia</option>';
       return;
     }
-
-    for (let id in subjects) {
-      select.innerHTML += `<option value="${id}">${subjects[id].name}</option>`;
-    }
-  } catch (e) {
-    document.getElementById('subject').innerHTML = '<option value="">Gagal load mapel</option>';
+    sel.innerHTML = '<option value="">— Pilih Mata Pelajaran —</option>';
+    keys.forEach(id => {
+      const opt = document.createElement('option');
+      opt.value = id;
+      opt.textContent = subjects[id].name;
+      sel.appendChild(opt);
+    });
+  } catch {
+    sel.innerHTML = '<option value="">Gagal memuat mapel</option>';
+    showLoginAlert('Tidak dapat terhubung ke server. Coba refresh halaman.');
   }
 }
 
 async function loadViolations() {
   try {
     const res = await fetch(`${CONFIG.BACKEND_URL}/api/violations`);
-    VIOLATIONS = await res.json();
-  } catch (e) {
-    console.error('Gagal load violations');
+    if (!res.ok) throw new Error('Gagal');
+    state.violations = await res.json();
+  } catch {
+    console.warn('[ujian] Gagal memuat konfigurasi pelanggaran');
   }
 }
 
-// Submit form login
-document.getElementById('loginForm').addEventListener('submit', async function(e) {
-  e.preventDefault();
+/* ─────────────────────────────────────────────
+   LOGIN
+───────────────────────────────────────────── */
+async function handleLogin() {
+  const name    = document.getElementById('studentName').value.trim();
+  const email   = document.getElementById('studentEmail').value.trim();
+  const subjEl  = document.getElementById('subject');
+  const subject = subjEl.value;
+  const subjectName = subjEl.options[subjEl.selectedIndex]?.text || '';
 
-  const name = document.getElementById('studentName').value.trim();
-  const email = document.getElementById('studentEmail').value.trim();
-  const subject = document.getElementById('subject').value;
+  // Validasi
+  if (!name) return showLoginAlert('Nama lengkap wajib diisi.');
+  if (!email) return showLoginAlert('Email wajib diisi.');
+  if (!email.endsWith('@smpkanisiuskudus.sch.id'))
+    return showLoginAlert('Gunakan email sekolah dengan domain @smpkanisiuskudus.sch.id');
+  if (!subject) return showLoginAlert('Pilih mata pelajaran terlebih dahulu.');
 
-  if (!subject) return alert('Pilih mapel dulu!');
-  if (!email.endsWith('@smpkanisiuskudus.sch.id')) {
-    return alert('Gunakan email sekolah: @smpkanisiuskudus.sch.id');
-  }
-
-  document.getElementById('startBtn').disabled = true;
-  document.getElementById('startBtn').textContent = 'Memulai...';
+  const btn = document.getElementById('startBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Menghubungkan…';
+  hideLoginAlert();
 
   try {
-    const response = await fetch(`${CONFIG.BACKEND_URL}/api/init`, {
+    const res = await fetch(`${CONFIG.BACKEND_URL}/api/init`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, email, subject })
+      body: JSON.stringify({ name, email, subject }),
     });
+    const data = await res.json();
 
-    const result = await response.json();
-    if (!response.ok) throw new Error(result.error);
-    if (result.blocked) return showBlocked();
-
-    studentData = { name, email, subject };
-    startExam(result.formUrl);
-
-  } catch (error) {
-    alert(error.message || 'Gagal terhubung ke server');
-    document.getElementById('startBtn').disabled = false;
-    document.getElementById('startBtn').textContent = 'Mulai Ujian';
-  }
-});
-
-function startExam(formUrl) {
-  document.getElementById('loginContainer').style.display = 'none';
-  document.getElementById('examContainer').style.display = 'block';
-  document.getElementById('formFrame').src = formUrl;
-  document.getElementById('warningCount').textContent = 0;
-
-  document.documentElement.requestFullscreen?.();
-  setupViolationDetection();
-  startStatusCheck();
-}
-
-function setupViolationDetection() {
-  let loginInProgress = false;
-  let focusLostTime = 0;
-  let ignoreViolationsUntil = 0;
-  let originalWidth = screen.width;
-  let originalHeight = screen.height;
-  const iframe = document.getElementById('formFrame');
-
-  // Grace period buat login Google
-  iframe.addEventListener('click', () => {
-    ignoreViolationsUntil = Date.now() + 2000;
-  });
-
-  iframe.addEventListener('focus', () => {
-    ignoreViolationsUntil = Date.now() + 2000;
-  });
-
-  iframe.addEventListener('load', () => {
-    try {
-      const iframeUrl = iframe.contentWindow.location.href;
-      if (iframeUrl.includes('accounts.google.com')) {
-        loginInProgress = true;
-        ignoreViolationsUntil = Date.now() + 30000;
-      } else if (iframeUrl.includes('docs.google.com/forms')) {
-        loginInProgress = false;
-        ignoreViolationsUntil = Date.now() + 2000;
-      }
-    } catch (e) {
-      ignoreViolationsUntil = Date.now() + 2000;
-    }
-  });
-
-  function safeTriggerViolation(violationId) {
-    if (loginInProgress || Date.now() < ignoreViolationsUntil) {
-      console.log('Skip pelanggaran, masih grace period:', violationId);
+    if (!res.ok) throw new Error(data.error || 'Terjadi kesalahan server.');
+    if (data.blocked) {
+      setBlockedMeta(name, subjectName, data.totalPoint ?? '?');
+      showPage('blockedPage');
       return;
     }
-    triggerViolation(violationId);
+
+    state.student = { name, email, subject, subjectName };
+    startExam(data.formUrl);
+
+  } catch (err) {
+    showLoginAlert(err.message || 'Gagal terhubung ke server. Coba lagi.');
+    btn.disabled = false;
+    btn.textContent = 'Mulai Ujian';
   }
+}
 
-  // 1. Deteksi pindah tab
+/* ─────────────────────────────────────────────
+   EXAM
+───────────────────────────────────────────── */
+function startExam(formUrl) {
+  // Set info topbar
+  const { name, subjectName } = state.student;
+  document.getElementById('topbarInfo').innerHTML =
+    `<span>${escHtml(name)}</span> &mdash; ${escHtml(subjectName)}`;
+
+  document.getElementById('formFrame').src = formUrl;
+  showPage('examPage');
+
+  // Fullscreen (dipanggil langsung dari flow klik user via handleLogin → startExam)
+  enterFullscreen();
+
+  // Deteksi dan polling
+  setupViolationDetection();
+  startStatusPolling();
+}
+
+function enterFullscreen() {
+  const el = document.documentElement;
+  const req = el.requestFullscreen || el.webkitRequestFullscreen || el.mozRequestFullScreen;
+  if (req) {
+    req.call(el).then(() => {
+      document.getElementById('fsNotice').classList.add('hidden');
+    }).catch(() => {
+      document.getElementById('fsNotice').classList.remove('hidden');
+    });
+  }
+}
+
+/* ─────────────────────────────────────────────
+   VIOLATION DETECTION
+───────────────────────────────────────────── */
+function setupViolationDetection() {
+  const iframe = document.getElementById('formFrame');
+
+  // Grace period saat iframe load / kemungkinan login Google
+  iframe.addEventListener('load', () => setGrace(3000));
+
+  // Deteksi pindah tab via Page Visibility API (lebih andal dari blur)
   document.addEventListener('visibilitychange', () => {
-    if (document.hidden) safeTriggerViolation('TAB_SWITCH');
+    if (document.hidden) safeTrigger('TAB_SWITCH');
   });
-  
-  window.addEventListener('blur', () => safeTriggerViolation('TAB_SWITCH'));
 
-  // 2. Deteksi copy paste klik kanan
-  document.addEventListener('copy', e => { e.preventDefault(); safeTriggerViolation('COPY_PASTE'); });
-  document.addEventListener('paste', e => { e.preventDefault(); safeTriggerViolation('COPY_PASTE'); });
-  document.addEventListener('contextmenu', e => { e.preventDefault(); safeTriggerViolation('RIGHT_CLICK'); });
+  // Deteksi fullscreen exit
+  document.addEventListener('fullscreenchange', () => {
+    if (!document.fullscreenElement) {
+      document.getElementById('fsNotice').classList.remove('hidden');
+      safeTrigger('FULLSCREEN_EXIT');
+    } else {
+      document.getElementById('fsNotice').classList.add('hidden');
+    }
+  });
 
+  // Copy & paste (di luar iframe)
+  document.addEventListener('copy',  e => { e.preventDefault(); safeTrigger('COPY_PASTE'); });
+  document.addEventListener('paste', e => { e.preventDefault(); safeTrigger('COPY_PASTE'); });
+  document.addEventListener('contextmenu', e => { e.preventDefault(); safeTrigger('RIGHT_CLICK'); });
 
-
-  // Cek fokus tiap 1 detik
-  violationCheckInterval = setInterval(() => {
-    if (Date.now() < ignoreViolationsUntil) return;
-    if (!document.hasFocus()) {
-      focusLostTime += 1;
-      if (focusLostTime >= 2) {
-        safeTriggerViolation('TAB_SWITCH');
-        focusLostTime = 0;
+  // Cek fokus periodik — HANYA sebagai backup jika visibilitychange tidak terpicu
+  // window.blur TIDAK digunakan langsung karena false-positive saat klik iframe
+  state.focusTimer = setInterval(() => {
+    if (state.blocked || Date.now() < state.gracePeriodUntil) return;
+    if (document.hidden) {
+      state.focusLostSeconds++;
+      if (state.focusLostSeconds >= CONFIG.FOCUS_LOST_THRESHOLD_S) {
+        safeTrigger('TAB_SWITCH');
+        state.focusLostSeconds = 0;
       }
     } else {
-      focusLostTime = 0;
-      checkSplitScreen(); // cek split screen tiap detik juga
+      state.focusLostSeconds = 0;
     }
   }, 1000);
-
-  // Cek awal pas ujian mulai
-  setTimeout(checkSplitScreen, 2000);
 }
-async function triggerViolation(violationId) {
-  const violation = VIOLATIONS[violationId];
-  if (!violation) return;
 
-  document.getElementById('warningBox').style.display = 'block';
-  document.getElementById('warningBox').innerHTML = `⚠️ ${violation.name}! +${violation.point} poin`;
+function setGrace(ms) {
+  state.gracePeriodUntil = Date.now() + ms;
+}
+
+function safeTrigger(violationId) {
+  if (state.blocked) return;
+  if (Date.now() < state.gracePeriodUntil) return;
+
+  // Debounce: jangan trigger tipe yang sama terlalu cepat
+  const now = Date.now();
+  if (now - state.lastViolationTime < CONFIG.DEBOUNCE_VIOLATION_MS) return;
+  state.lastViolationTime = now;
+
+  triggerViolation(violationId);
+}
+
+async function triggerViolation(violationId) {
+  const v = state.violations[violationId];
+  const name  = v?.name  || violationId;
+  const point = v?.point || 0;
+
+  showToast(name, point);
+  updateViolationPill(state.totalPoints + point);
 
   try {
     const res = await fetch(`${CONFIG.BACKEND_URL}/api/log`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: studentData.email, violationId })
+      body: JSON.stringify({ email: state.student.email, violationId }),
     });
-    const result = await res.json();
-    document.getElementById('warningCount').textContent = result.totalPoint;
-    if (result.blocked) exitExam();
-  } catch (e) {
-    console.error(e);
-  }
-
-  setTimeout(() => {
-    document.getElementById('warningBox').style.display = 'none';
-  }, 3000);
-}
-
-function startStatusCheck() {
-  statusCheckInterval = setInterval(async () => {
-    const res = await fetch(`${CONFIG.BACKEND_URL}/api/status?email=${studentData.email}`);
     const data = await res.json();
-    if (data.blocked) exitExam();
-  }, 5000);
+    state.totalPoints = data.totalPoint ?? state.totalPoints;
+    updateViolationPill(state.totalPoints);
+    if (data.blocked) doBlock();
+  } catch (e) {
+    console.error('[ujian] Gagal log pelanggaran:', e);
+  }
 }
 
-function exitExam() {
-  clearInterval(statusCheckInterval);
-  clearInterval(violationCheckInterval);
-  document.exitFullscreen?.();
-  document.getElementById('examContainer').style.display = 'none';
-  showBlocked();
+/* ─────────────────────────────────────────────
+   STATUS POLLING
+───────────────────────────────────────────── */
+function startStatusPolling() {
+  state.statusTimer = setInterval(async () => {
+    if (state.blocked) return;
+    try {
+      const res = await fetch(`${CONFIG.BACKEND_URL}/api/status?email=${encodeURIComponent(state.student.email)}`);
+      if (!res.ok) return;
+      const data = await res.json();
+      state.totalPoints = data.totalPoint ?? state.totalPoints;
+      updateViolationPill(state.totalPoints);
+      if (data.blocked) doBlock();
+    } catch {
+      // silent — tetap coba di interval berikutnya
+    }
+  }, CONFIG.STATUS_INTERVAL_MS);
 }
 
-function showBlocked() {
-  document.getElementById('loginContainer').style.display = 'none';
-  document.getElementById('blockedContainer').style.display = 'block';
+/* ─────────────────────────────────────────────
+   BLOCK
+───────────────────────────────────────────── */
+function doBlock() {
+  if (state.blocked) return;
+  state.blocked = true;
+
+  clearInterval(state.statusTimer);
+  clearInterval(state.focusTimer);
+  if (document.exitFullscreen) document.exitFullscreen().catch(() => {});
+
+  setBlockedMeta(
+    state.student?.name    || '—',
+    state.student?.subjectName || '—',
+    state.totalPoints
+  );
+  showPage('blockedPage');
+}
+
+function setBlockedMeta(name, subject, points) {
+  document.getElementById('bName').textContent    = name;
+  document.getElementById('bSubject').textContent = subject;
+  document.getElementById('bPoints').textContent  = `${points} poin`;
+}
+
+/* ─────────────────────────────────────────────
+   UI HELPERS
+───────────────────────────────────────────── */
+let toastTimer = null;
+
+function showToast(name, point) {
+  const toast = document.getElementById('violationToast');
+  const isDanger = point >= 10;
+
+  document.getElementById('toastIcon').textContent  = isDanger ? '🚫' : '⚠️';
+  document.getElementById('toastTitle').textContent = name;
+  document.getElementById('toastTitle').className   = 'toast-title' + (isDanger ? ' danger-text' : '');
+  document.getElementById('toastBody').innerHTML    = `<span class="toast-pts">+${point} poin pelanggaran</span>`;
+  toast.classList.toggle('danger-toast', isDanger);
+  toast.classList.add('show');
+
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => toast.classList.remove('show'), CONFIG.TOAST_DURATION_MS);
+}
+
+function updateViolationPill(points) {
+  const pill  = document.getElementById('violationPill');
+  const label = document.getElementById('violationLabel');
+  label.textContent = `${points} poin`;
+  pill.classList.toggle('danger', points >= 10);
+}
+
+function showPage(id) {
+  ['loginPage', 'examPage', 'blockedPage'].forEach(p => {
+    document.getElementById(p).classList.toggle('hidden', p !== id);
+  });
+}
+
+function showLoginAlert(msg) {
+  const el  = document.getElementById('loginAlert');
+  document.getElementById('loginAlertMsg').textContent = msg;
+  el.classList.add('show');
+}
+
+function hideLoginAlert() {
+  document.getElementById('loginAlert').classList.remove('show');
+}
+
+function escHtml(str) {
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 </script>
 </body>
