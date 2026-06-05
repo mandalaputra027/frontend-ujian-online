@@ -60,7 +60,7 @@
     @keyframes pulse { 0%,100%{opacity:.18} 50%{opacity:.26} }
 
     /* ─── PAGES ─── */
-    .page { position: relative; z-index: 1; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px; }
+    .page { position: relative; z-index: 1; min-height: 100vh; min-height: 100dvh; display: flex; align-items: center; justify-content: center; padding: 24px; }
     .page.hidden { display: none !important; }
 
     /* ─── CARD ─── */
@@ -215,18 +215,29 @@
       background: var(--bg);
       padding: 0;
       align-items: stretch;
+      /* Pastikan mengisi penuh saat fullscreen */
+      min-height: 100vh;
+      min-height: 100dvh;
+      height: 100%;
+      position: relative; /* anchor untuk fullscreen-notice absolute */
     }
 
+    /* Saat elemen apapun jadi fullscreen, paksa bg dan ukuran penuh */
+    :fullscreen { background: var(--bg); }
+    :-webkit-full-screen { background: var(--bg); }
+
     .exam-topbar {
-      position: fixed; top: 0; left: 0; right: 0;
+      /* Sticky (bukan fixed) agar tetap di dalam flow fullscreen element */
+      position: sticky; top: 0;
       height: 52px;
-      background: rgba(15,17,23,0.92);
+      background: rgba(15,17,23,0.95);
       backdrop-filter: blur(12px);
       border-bottom: 1px solid var(--border);
       display: flex; align-items: center;
       padding: 0 20px;
       gap: 16px;
       z-index: 100;
+      flex-shrink: 0;
     }
     .topbar-brand {
       font-family: 'DM Serif Display', serif;
@@ -266,7 +277,7 @@
 
     /* violation toast */
     .violation-toast {
-      position: fixed; top: 68px; right: 16px;
+      position: absolute; top: 68px; right: 16px;
       max-width: 320px;
       background: var(--surface);
       border: 1px solid rgba(245,166,35,0.4);
@@ -288,9 +299,10 @@
 
     /* iframe area */
     .exam-frame-wrap {
-      margin-top: 52px;
-      flex: 1;
+      flex: 1 1 0;
+      min-height: 0;
       height: calc(100vh - 52px);
+      height: calc(100dvh - 52px);
     }
     #formFrame {
       width: 100%; height: 100%;
@@ -342,8 +354,9 @@
 
     /* ─── FULLSCREEN NOTICE ─── */
     .fullscreen-notice {
-      position: fixed; inset: 0;
-      background: rgba(0,0,0,0.85);
+      /* absolute agar bekerja di dalam fullscreen element, bukan fixed ke browser viewport */
+      position: absolute; inset: 0;
+      background: rgba(0,0,0,0.88);
       backdrop-filter: blur(8px);
       z-index: 9999;
       display: flex; flex-direction: column;
